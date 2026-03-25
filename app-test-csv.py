@@ -2,30 +2,31 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from streamlit_autorefresh import st_autorefresh
-"""
+
 # -----------------------------
 # Login सिस्टम
 # -----------------------------
-def login():
-    st.title("🔐 Login")
+# def login():
+#     st.title("🔐 Login")
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+#     username = st.text_input("Username")
+#     password = st.text_input("Password", type="password")
 
-    if st.button("Login"):
-        if username == "admin" and password == "admin123":
-            st.session_state["logged_in"] = True
-        else:
-            st.error("Invalid credentials")
+#     if st.button("Login"):
+#         if username == "admin" and password == "admin123":
+#             st.session_state["logged_in"] = True
+#         else:
+#             st.error("Invalid credentials")
 
 # Session init
-if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
+# if "logged_in" not in st.session_state:
+#     st.session_state["logged_in"] = False
 
-if not st.session_state["logged_in"]:
-    login()
-    st.stop()
-"""
+# if not st.session_state["logged_in"]:
+#     login()
+#     st.stop()
+
+
 
 # -----------------------------
 # Page Config
