@@ -1,0 +1,9 @@
+user,team,date,feature,queries
+vidya,devops,2026-03-10,code_generation,15
+vidya,devops,2026-03-11,debug_help,6
+dev1,backend,2026-03-10,code_generation,10
+dev2,backend,2026-03-11,explain_code,8
+dev3,qa,2026-03-11,code_generation,4
+dev1,backend,2026-03-12,debug_help,7
+dev2,backend,2026-03-12,code_generation,12
+dev3,qa,2026-03-12,explain_code,5
