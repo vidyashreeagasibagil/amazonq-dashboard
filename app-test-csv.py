@@ -2,11 +2,10 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from streamlit_autorefresh import st_autorefresh
-
+"""
 # -----------------------------
 # Login सिस्टम
 # -----------------------------
-"""
 def login():
     st.title("🔐 Login")
 
@@ -26,7 +25,6 @@ if "logged_in" not in st.session_state:
 if not st.session_state["logged_in"]:
     login()
     st.stop()
-
 """
 
 # -----------------------------
