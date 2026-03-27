@@ -145,6 +145,24 @@ with col4:
 st.markdown("---")
 
 # -----------------------------
+# Leaderboard
+# -----------------------------
+
+
+st.subheader("🏆 Top Amazon Q Users")
+st.caption("Users with highest Amazon Q usage (Queries Count)")
+
+top_users = (
+    filtered.groupby("user")["queries"]
+    .sum()
+    .sort_values(ascending=False)
+    .reset_index()
+)
+
+st.dataframe(top_users, use_container_width=True)
+st.markdown("---")
+
+# -----------------------------
 # PRODUCTIVITY KPIs
 # -----------------------------
 st.markdown("## 🚀 Productivity Insights")
