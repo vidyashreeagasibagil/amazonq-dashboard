@@ -1,79 +1,57 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import requests
 from streamlit_autorefresh import st_autorefresh
 
 # -----------------------------
-# Login सिस्टम
-# -----------------------------
-# def login():
-#     st.title("🔐 Login")
-
-#     username = st.text_input("Username")
-#     password = st.text_input("Password", type="password")
-
-#     if st.button("Login"):
-#         if username == "admin" and password == "admin123":
-#             st.session_state["logged_in"] = True
-#         else:
-#             st.error("Invalid credentials")
-
-# Session init
-# if "logged_in" not in st.session_state:
-#     st.session_state["logged_in"] = False
-
-# if not st.session_state["logged_in"]:
-#     login()
-#     st.stop()
-
-
-
-# -----------------------------
-# Page Config
+# CONFIG
 # -----------------------------
 st.set_page_config(page_title="Amazon Q Dashboard", layout="wide")
-
-# Auto refresh (2 min)
 st_autorefresh(interval=120000, key="refresh")
 
-# Title
 st.markdown("""
 <h1 style='text-align: center; color: #4CAF50;'>
 🚀 Amazon Q Developer Usage Dashboard
 </h1>
 """, unsafe_allow_html=True)
 
+st.caption("📊 All time values are in hours, percentages represent efficiency improvement, and counts represent number of queries.")
+
 # -----------------------------
-# Load CSV Data
+# LOAD DATA
 # -----------------------------
 df = pd.read_csv("amazonq_usage.csv")
+prod_df = pd.read_csv("productivity_data.csv")
 
-# Convert date
+df = pd.merge(df, prod_df, on="user", how="left")
 df["date"] = pd.to_datetime(df["date"])
 
 # -----------------------------
-# Sidebar Filters
+# PRODUCTIVITY CALCULATIONS
+# -----------------------------
+baseline_time = 50
+
+df["time_saved"] = baseline_time - df["pr_time_hours"]
+df["improvement"] = (df["time_saved"] / baseline_time) * 100
+df["pr_success_rate"] = (df["pr_merged"] / df["pr_created"]) * 100
+
+# -----------------------------
+# SIDEBAR FILTERS
 # -----------------------------
 st.sidebar.header("Filters")
 
-# Team filter
 selected_team = st.sidebar.multiselect(
     "Select Team",
-    options=sorted(df["team"].dropna().unique()),
-    default=sorted(df["team"].dropna().unique())
+    options=sorted(df["team"].unique()),
+    default=sorted(df["team"].unique())
 )
 
 filtered_team_df = df[df["team"].isin(selected_team)]
 
-# Date filter
-min_date = df["date"].min()
-max_date = df["date"].max()
-
 selected_date = st.sidebar.date_input(
     "Select Date Range",
-    [min_date, max_date],
-    min_value=min_date,
-    max_value=max_date
+    [df["date"].min(), df["date"].max()]
 )
 
 filtered_team_df = filtered_team_df[
@@ -81,11 +59,10 @@ filtered_team_df = filtered_team_df[
     (filtered_team_df["date"] <= pd.to_datetime(selected_date[1]))
 ]
 
-# User filter (dependent)
 selected_user = st.sidebar.multiselect(
     "Select User",
-    options=sorted(filtered_team_df["user"].dropna().unique()),
-    default=sorted(filtered_team_df["user"].dropna().unique())
+    options=sorted(filtered_team_df["user"].unique()),
+    default=sorted(filtered_team_df["user"].unique())
 )
 
 filtered_df = filtered_team_df[
@@ -93,101 +70,149 @@ filtered_df = filtered_team_df[
 ]
 
 # -----------------------------
-# KPI Cards
+# KPI CARDS
 # -----------------------------
 col1, col2, col3 = st.columns(3)
 
-total_queries = int(filtered_df["queries"].sum())
-total_users = filtered_df["user"].nunique()
-total_teams = filtered_df["team"].nunique()
-
 col1.markdown(f"""
 <div style="background-color:#1f77b4;padding:20px;border-radius:12px;text-align:center;color:white">
-<h4>Total Queries</h4>
-<h2>{total_queries}</h2>
+<h4>Total Queries (Count)</h4>
+<h2>{int(filtered_df["queries"].sum())}</h2>
 </div>
 """, unsafe_allow_html=True)
 
 col2.markdown(f"""
 <div style="background-color:#2ca02c;padding:20px;border-radius:12px;text-align:center;color:white">
-<h4>Total Users</h4>
-<h2>{total_users}</h2>
+<h4>Total Users (Count)</h4>
+<h2>{filtered_df["user"].nunique()}</h2>
 </div>
 """, unsafe_allow_html=True)
 
 col3.markdown(f"""
 <div style="background-color:#ff7f0e;padding:20px;border-radius:12px;text-align:center;color:white">
-<h4>Total Teams</h4>
-<h2>{total_teams}</h2>
+<h4>Total Teams (Count)</h4>
+<h2>{filtered_df["team"].nunique()}</h2>
 </div>
 """, unsafe_allow_html=True)
 
 st.divider()
 
 # -----------------------------
-# Charts
+# USAGE CHARTS
 # -----------------------------
 col_left, col_right = st.columns(2)
 
 with col_left:
-    st.subheader("👤 Usage by Developer")
-    user_data = filtered_df.groupby("user")["queries"].sum()
-    st.bar_chart(user_data)
+    st.subheader("👤 Usage by Developer (Queries Count)")
+    st.caption("Number of Amazon Q queries per developer")
+    st.bar_chart(filtered_df.groupby("user")["queries"].sum())
 
 with col_right:
-    st.subheader("👥 Usage by Team")
-    team_data = filtered_df.groupby("team")["queries"].sum()
-    st.bar_chart(team_data)
+    st.subheader("👥 Usage by Team (Queries Count)")
+    st.caption("Total queries aggregated by team")
+    st.bar_chart(filtered_df.groupby("team")["queries"].sum())
 
 st.divider()
 
-# Feature Usage
-st.subheader("⚙️ Feature Usage")
+st.subheader("⚙️ Feature Usage (Queries Count)")
 feature_data = filtered_df.groupby("feature")["queries"].sum()
 
 fig, ax = plt.subplots()
 ax.pie(feature_data, labels=feature_data.index, autopct='%1.1f%%')
 st.pyplot(fig)
 
-# Daily Trend
-st.subheader("📈 Daily Usage Trend")
-date_data = filtered_df.groupby("date")["queries"].sum()
-st.line_chart(date_data)
+st.subheader("📈 Daily Usage Trend (Queries per Day)")
+st.line_chart(filtered_df.groupby("date")["queries"].sum())
 
 st.divider()
 
 # -----------------------------
-# Leaderboard
+# LEADERBOARD
 # -----------------------------
 st.subheader("🏆 Top Amazon Q Users")
-
-top_users = (
+st.dataframe(
     filtered_df.groupby("user")["queries"]
     .sum()
     .sort_values(ascending=False)
     .reset_index()
 )
 
-st.dataframe(top_users)
-
 st.divider()
 
 # -----------------------------
-# Download Button
+# DOWNLOAD
 # -----------------------------
-st.subheader("⬇️ Download Data")
-
-csv = filtered_df.to_csv(index=False).encode('utf-8')
+csv = filtered_df.to_csv(index=False).encode("utf-8")
 
 st.download_button(
-    label="Download as CSV",
-    data=csv,
-    file_name="amazonq_usage_report.csv",
-    mime="text/csv",
+    "⬇️ Download Data",
+    csv,
+    "amazonq_report.csv",
+    "text/csv"
 )
 
+# =============================
+# 🚀 PRODUCTIVITY INSIGHTS
+# =============================
+st.divider()
+st.markdown("## 🚀 Engineering Productivity Insights")
+
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric("⏱️ Time Saved (Hours)", round(filtered_df["time_saved"].sum(), 2))
+col2.metric("📈 Productivity Gain (%)", round(filtered_df["improvement"].mean(), 2))
+col3.metric("💻 Total Commits (Count)", int(filtered_df["commits"].sum()))
+col4.metric("✅ PR Success Rate (%)", round(filtered_df["pr_success_rate"].mean(), 2))
+
+# Charts
+st.subheader("📈 Productivity Improvement by Developer (%)")
+st.bar_chart(filtered_df.groupby("user")["improvement"].mean())
+
+st.subheader("⏱️ Time Saved by Team (Hours)")
+st.bar_chart(filtered_df.groupby("team")["time_saved"].sum())
+
+# Before vs After
+st.subheader("📊 Before vs After Development Time (Hours)")
+comparison = filtered_df[[
+    "user", "pr_time_hours"
+]].drop_duplicates()
+
+comparison["Before (Hours)"] = 50
+comparison["After (Hours)"] = comparison["pr_time_hours"]
+
+comparison = comparison.set_index("user")[["Before (Hours)", "After (Hours)"]]
+
+st.bar_chart(comparison)
+
+# Correlation
+st.subheader("🔗 Amazon Q Usage vs Productivity")
+st.scatter_chart(
+    filtered_df.groupby("user")[["queries", "time_saved"]].sum()
+)
+
+# Summary Table
+st.subheader("📋 Developer Productivity Summary")
+
+summary = filtered_df[[
+    "user", "team", "queries", "commits",
+    "pr_created", "pr_merged",
+    "pr_time_hours", "time_saved",
+    "improvement", "pr_success_rate"
+]].drop_duplicates()
+
+summary = summary.rename(columns={
+    "queries": "Queries (Count)",
+    "commits": "Commits (Count)",
+    "pr_time_hours": "PR Time (Hours)",
+    "time_saved": "Time Saved (Hours)",
+    "improvement": "Improvement (%)",
+    "pr_success_rate": "PR Success Rate (%)"
+})
+
+st.dataframe(summary)
+
 # -----------------------------
-# Raw Data
+# RAW DATA
 # -----------------------------
 with st.expander("🔍 View Raw Data"):
     st.dataframe(filtered_df)
