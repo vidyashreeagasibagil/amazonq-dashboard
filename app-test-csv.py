@@ -211,43 +211,6 @@ summary = summary.rename(columns={
 
 st.dataframe(summary)
 
-# =============================
-# 🔗 GITHUB INTEGRATION
-# =============================
-
-st.divider()
-st.markdown("## 🔗 GitHub Activity (Live Data)")
-
-GITHUB_TOKEN = "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"
-OWNER = "vidyashreeagasibagil"
-
-headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-
-def get_repos():
-    url = "https://api.github.com/user/repos"
-    return requests.get(url, headers=headers).json()
-
-def get_total_commits():
-    total = 0
-    for repo in get_repos():
-        r = requests.get(repo["url"] + "/commits", headers=headers)
-        if r.status_code == 200:
-            total += len(r.json())
-    return total
-
-def get_total_prs():
-    total = 0
-    for repo in get_repos():
-        r = requests.get(repo["url"] + "/pulls?state=all", headers=headers)
-        if r.status_code == 200:
-            total += len(r.json())
-    return total
-
-col1, col2 = st.columns(2)
-
-col1.metric("💻 GitHub Commits (All Repos)", get_total_commits())
-col2.metric("🔀 Pull Requests (All Repos)", get_total_prs())
-
 # -----------------------------
 # RAW DATA
 # -----------------------------
