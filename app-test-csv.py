@@ -236,8 +236,4 @@ st.dataframe(filtered)
 # -----------------------------
 st.download_button("⬇️ Download", filtered.to_csv(index=False), "report.csv")
 
-# -----------------------------
-# RAW DATA
-# -----------------------------
-with st.expander("Raw Data"):
-    st.dataframe(filtered)
+
